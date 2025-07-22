@@ -323,6 +323,45 @@ git commit -m "Initial project setup with Claude Code configuration"
 - **[Environment Configuration](claude-setup/ENV_CONFIGURATION_COMPLETE.md)** - API keys and settings
 - **[Adding New Servers](claude-setup/ADD_NEW_SERVER_GUIDE.md)** - Extend with custom MCP servers
 
+##  🧹 Code Quality & Pre-Push Process
+
+### Automatic Emoji Removal
+This project automatically removes emojis from all files before pushing to maintain a clean, professional codebase.
+
+#### How It Works
+- **Pre-push Hook**: Automatically runs `remove_emojis.py` before every `git push`
+- **Clean Codebase**: Ensures no emoji characters in source code, documentation, or configuration files
+- **Automatic Commit**: Creates a commit with emoji removal changes if needed
+
+#### Manual Emoji Removal
+```bash
+# Check for emojis without removing them
+./remove-emojis.sh --dry-run
+
+# Remove emojis interactively (with confirmation)
+./remove-emojis.sh
+
+# Remove emojis automatically (no confirmation)
+./remove-emojis.sh --force
+
+# Get help and see all options
+./remove-emojis.sh --help
+```
+
+#### What Gets Processed
+- **File Types**: `.py`, `.md`, `.txt`, `.json`, `.yaml`, `.js`, `.ts`, `.html`, `.css`, `.sh`, etc.
+- **Exclusions**: Binary files, `node_modules`, `.git`, `.venv`, cache directories
+- **Scope**: All text files in the project recursively
+
+#### Pre-Push Hook Details
+The git pre-push hook:
+1. 🔍 Scans all project files for emojis
+2. 🧹 Removes any found emojis automatically  
+3. 📝 Stages and commits the changes
+4. 🚀 Continues with the push
+
+**Note**: The pre-push hook is automatically installed when you clone the repository.
+
 ##  Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.

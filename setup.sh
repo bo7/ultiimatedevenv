@@ -35,6 +35,11 @@ echo ""
 echo -e "${BLUE} Setting up directories and environment...${NC}"
 ./manage.sh setup
 
+# Setup git hooks for emoji removal and other quality checks
+echo ""
+echo -e "${BLUE} Setting up git hooks...${NC}"
+./setup-git-hooks.sh
+
 # Check if .env was created and prompt for API key
 if [ -f .env ]; then
     if grep -q "your_openrouter_key_here" .env; then
