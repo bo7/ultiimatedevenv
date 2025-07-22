@@ -266,6 +266,56 @@ git add .
 git commit -m "Initial project setup with Claude Code configuration"
 ```
 
+### 🧹 Automatic Emoji Removal
+
+**This repository automatically maintains clean, professional code by removing emojis before every push.**
+
+#### How It Works
+- **Pre-push Hook**: Automatically runs `remove_emojis.py` before every `git push`
+- **Comprehensive Scanning**: Processes all text files (`.py`, `.md`, `.js`, `.ts`, etc.)
+- **Auto-commit**: Automatically commits emoji removal changes
+- **Zero Configuration**: Works out of the box with no setup required
+
+#### Manual Emoji Removal
+```bash
+# Preview what emojis would be removed (dry-run)
+./clean-emojis.sh --dry-run
+
+# Remove emojis from all files
+./clean-emojis.sh
+
+# Remove emojis and automatically commit changes
+./clean-emojis.sh --commit
+
+# Get help with all options
+./clean-emojis.sh --help
+```
+
+#### When Emoji Removal Happens
+1. **Before every push** - Pre-push hook automatically runs
+2. **Manual cleanup** - Use `./clean-emojis.sh` anytime
+3. **Project setup** - New projects are cleaned automatically
+
+#### What Gets Cleaned
+- **All text files**: `.py`, `.md`, `.js`, `.ts`, `.html`, `.css`, `.json`, `.yaml`
+- **Documentation**: README files, comments, docstrings
+- **Configuration**: Environment files, config files, scripts
+- **Skips**: Binary files, git directories, node_modules, cache directories
+
+```bash
+# Example: The pre-push hook will transform this:
+echo "🚀 Starting deployment process 📝"
+
+# Into this:
+echo "Starting deployment process"
+```
+
+**Why Remove Emojis?**
+- ✅ **Professional appearance** in production code
+- ✅ **Consistent rendering** across different systems
+- ✅ **Better compatibility** with CI/CD and deployment tools
+- ✅ **Cleaner git diffs** and code reviews
+
 ##  What's Included
 
 ###  **AI-Powered Development:**
