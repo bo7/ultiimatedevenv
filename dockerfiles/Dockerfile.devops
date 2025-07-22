@@ -1,0 +1,217 @@
+# DevOps Development Environment
+# Container optimized for DevOps, Infrastructure as Code, and Cloud Development
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl wget git vim unzip zip \
+    build-essential software-properties-common \
+    apt-transport-https ca-certificates gnupg lsb-release \
+    python3 python3-pip \
+    nodejs npm \
+    jq tree htop \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Docker CLI
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y docker-ce-cli docker-compose-plugin \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Kubernetes tools
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/
+
+# Install Helm
+RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Install Terraform
+RUN wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list \
+    && apt-get update \
+    && apt-get install -y terraform packer vault consul nomad \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -rf aws awscliv2.zip
+
+# Install Azure CLI
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# Install Google Cloud SDK
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
+    && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - \
+    && apt-get update \
+    && apt-get install -y google-cloud-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Ansible
+RUN pip3 install ansible ansible-core boto3 botocore
+
+# Install monitoring tools
+RUN pip3 install \
+    prometheus-client \
+    grafana-api \
+    docker \
+    kubernetes \
+    paramiko \
+    fabric \
+    invoke
+
+# Install Node.js DevOps tools
+RUN npm install -g \
+    @angular/cli \
+    serverless \
+    @serverless/cli \
+    pulumi \
+    @pulumi/cli \
+    vercel \
+    netlify-cli \
+    firebase-tools
+
+# Install additional DevOps tools
+RUN curl -L https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /usr/local/bin/yq \
+    && chmod +x /usr/local/bin/yq
+
+# Install stern (Kubernetes log viewer)
+RUN curl -L https://github.com/stern/stern/releases/latest/download/stern_linux_amd64.tar.gz | tar xz \
+    && mv stern /usr/local/bin/
+
+# Install k9s (Kubernetes CLI manager)
+RUN curl -L https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_amd64.tar.gz | tar xz \
+    && mv k9s /usr/local/bin/
+
+# Install Istio
+RUN curl -L https://istio.io/downloadIstio | sh - \
+    && mv istio-*/bin/istioctl /usr/local/bin/ \
+    && rm -rf istio-*
+
+# Create user
+ARG USERNAME=devuser
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+
+# Add user to docker group
+RUN usermod -aG docker $USERNAME
+
+USER $USERNAME
+WORKDIR /workspace
+
+# Create DevOps aliases and functions
+RUN echo 'alias k="kubectl"' >> ~/.bashrc \
+    && echo 'alias tf="terraform"' >> ~/.bashrc \
+    && echo 'alias ans="ansible"' >> ~/.bashrc \
+    && echo 'alias doc="docker"' >> ~/.bashrc \
+    && echo 'alias dc="docker-compose"' >> ~/.bashrc
+
+# Install Oh My Zsh
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+
+# Add DevOps functions to zshrc
+RUN cat >> ~/.zshrc << 'EOF'
+
+# DevOps Functions
+# ================
+
+# Kubernetes shortcuts
+alias k="kubectl"
+alias kgp="kubectl get pods"
+alias kgs="kubectl get services"
+alias kgd="kubectl get deployments"
+alias kdp="kubectl describe pod"
+alias kds="kubectl describe service"
+alias kdd="kubectl describe deployment"
+
+# Terraform shortcuts
+alias tf="terraform"
+alias tfi="terraform init"
+alias tfp="terraform plan"
+alias tfa="terraform apply"
+alias tfd="terraform destroy"
+alias tfv="terraform validate"
+alias tff="terraform fmt"
+
+# Docker shortcuts
+alias d="docker"
+alias dc="docker-compose"
+alias dps="docker ps"
+alias di="docker images"
+alias dcu="docker-compose up"
+alias dcd="docker-compose down"
+alias dcl="docker-compose logs"
+
+# AWS shortcuts
+alias awsl="aws configure list"
+alias awsp="aws configure list-profiles"
+
+# Infrastructure deployment function
+deploy-infra() {
+    local env=${1:-dev}
+    echo "🚀 Deploying infrastructure for $env environment..."
+    
+    if [ -f "terraform/environments/$env/main.tf" ]; then
+        cd terraform/environments/$env
+        terraform init
+        terraform plan -out=tfplan
+        read -p "Apply changes? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            terraform apply tfplan
+        fi
+        cd - > /dev/null
+    else
+        echo "❌ Terraform configuration not found for $env"
+    fi
+}
+
+# Kubernetes cluster info
+cluster-info() {
+    echo "🏗️  Kubernetes Cluster Information"
+    echo "=================================="
+    kubectl cluster-info
+    echo ""
+    echo "Nodes:"
+    kubectl get nodes
+    echo ""
+    echo "Namespaces:"
+    kubectl get namespaces
+}
+
+# Monitor cluster resources
+monitor-cluster() {
+    echo "📊 Cluster Resource Usage"
+    echo "========================="
+    kubectl top nodes
+    echo ""
+    kubectl top pods --all-namespaces
+}
+
+# Quick deployment status
+deployment-status() {
+    local namespace=${1:-default}
+    echo "📈 Deployment Status in namespace: $namespace"
+    echo "============================================="
+    kubectl get deployments -n $namespace
+    echo ""
+    kubectl get pods -n $namespace
+}
+
+EOF
+
+EXPOSE 9000 3001
+
+CMD ["/bin/zsh"]

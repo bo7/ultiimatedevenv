@@ -1,0 +1,126 @@
+# Data Science Development Environment
+# Extends the main container with specialized data science tools
+
+FROM ubuntu:22.04
+
+# Extend the main Dockerfile
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl wget git vim build-essential \
+    python3 python3-pip python3-venv \
+    nodejs npm \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install R
+RUN apt-get update && apt-get install -y \
+    r-base r-base-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Julia
+RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.4-linux-x86_64.tar.gz \
+    && tar -xzf julia-1.9.4-linux-x86_64.tar.gz \
+    && mv julia-1.9.4 /opt/julia \
+    && ln -s /opt/julia/bin/julia /usr/local/bin/julia \
+    && rm julia-1.9.4-linux-x86_64.tar.gz
+
+# Install Python data science stack
+RUN pip3 install --upgrade pip && pip3 install \
+    jupyter \
+    jupyterlab \
+    notebook \
+    pandas \
+    numpy \
+    scipy \
+    matplotlib \
+    seaborn \
+    plotly \
+    bokeh \
+    altair \
+    streamlit \
+    dash \
+    scikit-learn \
+    xgboost \
+    lightgbm \
+    catboost \
+    tensorflow \
+    torch \
+    transformers \
+    datasets \
+    accelerate \
+    openai \
+    anthropic \
+    langchain \
+    chromadb \
+    pinecone-client \
+    faiss-cpu \
+    sentence-transformers \
+    spacy \
+    nltk \
+    textblob \
+    wordcloud \
+    opencv-python \
+    pillow \
+    imageio \
+    scikit-image \
+    dask \
+    polars \
+    pyarrow \
+    sqlalchemy \
+    psycopg2-binary \
+    pymongo \
+    redis \
+    beautifulsoup4 \
+    scrapy \
+    requests \
+    aiohttp \
+    joblib \
+    tqdm \
+    rich \
+    click \
+    typer
+
+# Install R packages
+RUN R -e "install.packages(c('tidyverse', 'ggplot2', 'dplyr', 'shiny', 'plotly', 'caret', 'randomForest'), repos='https://cran.rstudio.com/')"
+
+# Install Julia packages
+RUN julia -e 'using Pkg; Pkg.add(["DataFrames", "Plots", "MLJ", "Flux", "PlutoUI"])'
+
+# Create user
+ARG USERNAME=devuser
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+
+# Configure Jupyter
+USER $USERNAME
+RUN mkdir -p /home/$USERNAME/.jupyter
+
+# Create Jupyter config
+RUN jupyter lab --generate-config
+
+# Add custom Jupyter config
+RUN echo "c.ServerApp.ip = '0.0.0.0'" >> /home/$USERNAME/.jupyter/jupyter_lab_config.py \
+    && echo "c.ServerApp.port = 8888" >> /home/$USERNAME/.jupyter/jupyter_lab_config.py \
+    && echo "c.ServerApp.open_browser = False" >> /home/$USERNAME/.jupyter/jupyter_lab_config.py \
+    && echo "c.ServerApp.allow_root = False" >> /home/$USERNAME/.jupyter/jupyter_lab_config.py \
+    && echo "c.ServerApp.token = ''" >> /home/$USERNAME/.jupyter/jupyter_lab_config.py \
+    && echo "c.ServerApp.password = ''" >> /home/$USERNAME/.jupyter/jupyter_lab_config.py
+
+WORKDIR /workspace
+
+# Install JupyterLab extensions
+RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager \
+    && jupyter labextension install plotlywidget \
+    && jupyter labextension install @bokeh/jupyter_bokeh
+
+EXPOSE 8888 8050 8501
+
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]

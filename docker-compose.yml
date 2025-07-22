@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  dev-environment:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: claude-dev-env
+    hostname: dev-container
+    restart: unless-stopped
+    
+    # Environment variables
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-your_openrouter_key_here}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-deepseek/deepseek-r1-0528}
+      - ZEN_DEFAULT_MODEL=${ZEN_DEFAULT_MODEL:-deepseek/deepseek-r1-0528}
+      - ZEN_THINKING_MODE=${ZEN_THINKING_MODE:-medium}
+      - GIT_USER_NAME=${GIT_USER_NAME:-Your Name}
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-your.email@example.com}
+    
+    # Volume mounts for persistence
+    volumes:
+      # Workspace - your projects
+      - ./workspace:/workspace
+      
+      # Configuration persistence
+      - ./data/home:/home/devuser
+      - ./data/vscode-extensions:/home/devuser/.vscode-server/extensions
+      - ./data/claude-config:/home/devuser/.claude-code
+      - ./data/npm-global:/home/devuser/.npm-global
+      - ./data/cache:/home/devuser/.cache
+      
+      # Git configuration
+      - ./data/git:/home/devuser/.gitconfig
+      
+      # SSH keys (if needed)
+      - ./data/ssh:/home/devuser/.ssh
+      
+      # Docker socket (for Docker-in-Docker)
+      - /var/run/docker.sock:/var/run/docker.sock
+      
+      # Host timezone
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    
+    # Port mappings
+    ports:
+      - "3000:3000"   # Development server
+      - "8000:8000"   # FastAPI/Django
+      - "8080:8080"   # Alternative web server
+      - "5000:5000"   # Flask
+      - "9000:9000"   # Additional port
+    
+    # Networking
+    networks:
+      - dev-network
+    
+    # Keep container running
+    tty: true
+    stdin_open: true
+    
+    # Security
+    security_opt:
+      - seccomp:unconfined
+    
+    # Capabilities for development tools
+    cap_add:
+      - SYS_PTRACE
+    
+    # Working directory
+    working_dir: /workspace
+    
+    # Override command to keep container running
+    command: tail -f /dev/null
+
+  # Optional: Database for development
+  postgres:
+    image: postgres:15
+    container_name: dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: devdb
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpass
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - dev-network
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: dev-redis
+    restart: unless-stopped
+    volumes:
+      - ./data/redis:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
+    driver: bridge
+
+# Create named volumes for better performance
+volumes:
+  workspace-data:
+  home-data:
+  vscode-extensions:
+  npm-global:

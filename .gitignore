@@ -1,0 +1,68 @@
+# Environment variables (CRITICAL - contains secrets)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Keep templates (safe to commit)
+!.env_template
+!.env_template_master
+!.env.example
+
+# Personal/Private files
+*PRIVATE*
+*private*
+*.private
+
+# Credentials and secrets
+*credentials*
+*secrets*
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python environments
+.venv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Docker data (persistent but not committed)
+data/
+workspace/
+!workspace/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+!.vscode/settings.json
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Claude Code (keep configurations)
+.claude/
+!.claude/commands/
+
+# Temporary files
+temp/
+tmp/
+.cache/
