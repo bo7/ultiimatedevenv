@@ -35,15 +35,15 @@ claude-new my-awesome-project
 dev-layout
 ```
 
-##  🚀 Working Inside the Container
+##   Working Inside the Container
 
 **For the best development experience, work directly inside the containerized environment:**
 
 ### Why Container-First Development?
-- ✅ **Consistent Environment** - Same setup across all machines
-- ✅ **Isolated Dependencies** - No conflicts with host system
-- ✅ **Pre-configured Tools** - Everything ready out of the box
-- ✅ **Claude Code Integration** - Optimized AI development workflow
+-  **Consistent Environment** - Same setup across all machines
+-  **Isolated Dependencies** - No conflicts with host system
+-  **Pre-configured Tools** - Everything ready out of the box
+-  **Claude Code Integration** - Optimized AI development workflow
 
 ### Container Development Workflow
 
@@ -122,7 +122,7 @@ claude-code --add-server desktop-commander
 claude-code --add-server puppeteer
 ```
 
-### 📁 Recommended Project Structure Inside Container
+###  Recommended Project Structure Inside Container
 ```
 /workspace/
 ├── my-project/                 # Your main project
@@ -137,7 +137,7 @@ claude-code --add-server puppeteer
 └── templates/                 # Project templates
 ```
 
-### 🔧 Container Development Tips
+###  Container Development Tips
 
 #### Git Configuration Inside Container
 ```bash
@@ -232,7 +232,7 @@ cat > scripts/dev-setup.sh <<EOF
 echo "Setting up development environment..."
 pip install -r requirements.txt
 npm install
-echo "✅ Development environment ready!"
+echo " Development environment ready!"
 EOF
 chmod +x scripts/dev-setup.sh
 
@@ -323,7 +323,7 @@ git commit -m "Initial project setup with Claude Code configuration"
 - **[Environment Configuration](claude-setup/ENV_CONFIGURATION_COMPLETE.md)** - API keys and settings
 - **[Adding New Servers](claude-setup/ADD_NEW_SERVER_GUIDE.md)** - Extend with custom MCP servers
 
-##  🧹 Code Quality & Pre-Push Process
+##   Code Quality & Pre-Push Process
 
 ### Automatic Emoji Removal
 This project automatically removes emojis from all files before pushing to maintain a clean, professional codebase.
@@ -355,10 +355,10 @@ This project automatically removes emojis from all files before pushing to maint
 
 #### Pre-Push Hook Details
 The git pre-push hook:
-1. 🔍 Scans all project files for emojis
-2. 🧹 Removes any found emojis automatically  
-3. 📝 Stages and commits the changes
-4. 🚀 Continues with the push
+1.  Scans all project files for emojis
+2.  Removes any found emojis automatically  
+3.  Stages and commits the changes
+4.  Continues with the push
 
 **Note**: The pre-push hook is automatically installed when you clone the repository.
 
