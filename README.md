@@ -316,6 +316,60 @@ echo "Starting deployment process"
 - ✅ **Better compatibility** with CI/CD and deployment tools
 - ✅ **Cleaner git diffs** and code reviews
 
+### 🔒 Fork-Based Contribution Model
+
+**This repository uses a secure fork-based workflow to ensure code quality and security.**
+
+#### 🛡️ Branch Protection
+- **No direct pushes to main** - All changes must go through Pull Requests
+- **Required reviews** - At least 1 approval needed before merge
+- **Automated checks** - PR validation, security scans, and build tests
+- **Admin enforcement** - Rules apply to all contributors, including maintainers
+
+#### 🚀 Quick Contribution Steps
+```bash
+# 1. Fork the repository on GitHub
+# 2. Clone your fork
+git clone https://github.com/YOUR_USERNAME/docker-dev-environment.git
+cd docker-dev-environment
+
+# 3. Add upstream remote
+git remote add upstream https://github.com/bo7/ultiimatedevenv.git
+
+# 4. Create feature branch
+git checkout -b feature/your-feature-name
+
+# 5. Make changes and commit
+git add .
+git commit -m "feat: your feature description"
+
+# 6. Push to your fork and create PR
+git push origin feature/your-feature-name
+# Then create PR on GitHub: your-fork → original-repo
+```
+
+#### 🧪 Automated PR Validation
+Every Pull Request automatically runs:
+- **Security scan** - Checks for vulnerabilities and secrets
+- **Docker build test** - Ensures containers build successfully  
+- **Setup script validation** - Verifies all scripts work correctly
+- **Documentation check** - Ensures docs are updated
+- **Emoji removal** - Maintains professional code standards
+
+#### 📋 Contribution Requirements
+- **Fork-based workflow** - No direct repository access
+- **Descriptive commits** - Follow conventional commit format
+- **Updated documentation** - Document new features
+- **Pass all checks** - Automated validation must succeed
+- **Code review approval** - Maintainer review required
+
+```bash
+# Setup branch protection (for maintainers)
+./setup-branch-protection.sh
+```
+
+**See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for detailed contribution guidelines.**
+
 ##  What's Included
 
 ###  **AI-Powered Development:**
