@@ -32,7 +32,7 @@ venv.bak/
 
 # Docker data (persistent but not committed)
 data/
-workspace/
+workspace/*/
 !workspace/.gitkeep
 
 # Logs
