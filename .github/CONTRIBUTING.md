@@ -2,15 +2,15 @@
 
 Thank you for your interest in contributing! This project uses a **fork-based workflow** to ensure code quality and security. This guide will walk you through the entire contribution process.
 
-## 🔄 Fork-Based Workflow Overview
+##  Fork-Based Workflow Overview
 
 We use fork-based contributions instead of direct repository access. This means:
-- ✅ **No direct push access** to the main repository
-- ✅ **All changes via Pull Requests** from your fork
-- ✅ **Safe and secure** contribution process
-- ✅ **Standard open source practice**
+-  **No direct push access** to the main repository
+-  **All changes via Pull Requests** from your fork
+-  **Safe and secure** contribution process
+-  **Standard open source practice**
 
-## 🚀 Quick Start for Contributors
+##  Quick Start for Contributors
 
 ### 1. Fork the Repository
 ```bash
@@ -106,23 +106,23 @@ git push origin feature/your-feature-name
 # - Fill out the PR template with details
 ```
 
-## 📋 Contribution Guidelines
+##  Contribution Guidelines
 
 ### What We Welcome
-- ✅ **New MCP servers** and integrations
-- ✅ **Development tools** and configurations
-- ✅ **Documentation improvements**
-- ✅ **Bug fixes** and error handling
-- ✅ **Performance optimizations**
-- ✅ **Docker environment enhancements**
-- ✅ **Testing and automation**
+-  **New MCP servers** and integrations
+-  **Development tools** and configurations
+-  **Documentation improvements**
+-  **Bug fixes** and error handling
+-  **Performance optimizations**
+-  **Docker environment enhancements**
+-  **Testing and automation**
 
 ### Code Standards
-- ✅ **No emojis** in code (automatically removed by pre-push hook)
-- ✅ **Clear commit messages** following conventional commit format
-- ✅ **Documentation** for new features
-- ✅ **Testing** when applicable
-- ✅ **Docker compatibility** maintained
+-  **No emojis** in code (automatically removed by pre-push hook)
+-  **Clear commit messages** following conventional commit format
+-  **Documentation** for new features
+-  **Testing** when applicable
+-  **Docker compatibility** maintained
 
 ### File Structure for New Features
 ```
@@ -137,7 +137,7 @@ your-feature/
     └── your-feature-example/
 ```
 
-## 🧪 Testing Your Contributions
+##  Testing Your Contributions
 
 ### Local Testing
 ```bash
@@ -163,7 +163,7 @@ cd /workspace
 - Setup scripts must work correctly
 - No security vulnerabilities introduced
 
-## 📝 Pull Request Process
+##  Pull Request Process
 
 ### PR Requirements
 1. **Descriptive title** and description
@@ -186,7 +186,7 @@ When creating a PR, fill out our template:
 - Screenshots (if applicable)
 - Checklist completion
 
-## 🛠️ Common Contribution Types
+##  Common Contribution Types
 
 ### Adding a New MCP Server
 1. Create configuration in `configs/mcp-servers/`
@@ -212,7 +212,7 @@ When creating a PR, fill out our template:
 3. Document installation and usage
 4. Test in clean environment
 
-## 🔧 Development Environment Details
+##  Development Environment Details
 
 ### Container Development
 - Work inside the Docker container for best compatibility
@@ -236,7 +236,7 @@ cat ~/.ssh/id_ed25519.pub  # Add to GitHub
 - Verify environment: `./manage.sh status`
 - Check inside container: `./manage.sh enter`
 
-## 🆘 Getting Help
+##  Getting Help
 
 ### Before Asking for Help
 1. Search existing issues and discussions
@@ -257,22 +257,22 @@ Use our issue templates:
 - **Documentation**: For documentation improvements
 - **Question**: For general help
 
-## 🎉 Recognition
+##  Recognition
 
 Contributors will be:
-- ✅ **Listed in contributors** section
-- ✅ **Mentioned in release notes** for significant contributions
-- ✅ **Invited to collaborate** on related projects
-- ✅ **Given feedback** and guidance for improvement
+-  **Listed in contributors** section
+-  **Mentioned in release notes** for significant contributions
+-  **Invited to collaborate** on related projects
+-  **Given feedback** and guidance for improvement
 
-## 📚 Additional Resources
+##  Additional Resources
 
 - [GitHub Flow Guide](https://guides.github.com/introduction/flow/)
 - [Conventional Commits](https://www.conventionalcommits.org/)
 - [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/)
 - [MCP Server Documentation](https://modelcontextprotocol.io/)
 
-## 🤝 Code of Conduct
+##  Code of Conduct
 
 Be respectful, inclusive, and constructive in all interactions. We're here to build something great together!
 

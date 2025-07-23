@@ -1,31 +1,31 @@
 ---
-name: ✨ Feature Request
+name:  Feature Request
 about: Suggest a new feature or enhancement
 title: 'feat: [Brief description of the feature]'
 labels: ['enhancement', 'needs-discussion']
 assignees: ['bo7']
 ---
 
-## ✨ Feature Description
+##  Feature Description
 <!-- A clear and concise description of the feature you'd like to see -->
 
-## 🎯 Problem Statement
+##  Problem Statement
 <!-- What problem does this feature solve? -->
 
-## 💡 Proposed Solution
+##  Proposed Solution
 <!-- Describe the solution you'd like to see implemented -->
 
-## 🔄 User Story
+##  User Story
 <!-- Describe how this feature would be used -->
 As a [type of user], I want [feature] so that [benefit].
 
-## 📋 Acceptance Criteria
+##  Acceptance Criteria
 <!-- Define what "done" looks like for this feature -->
 - [ ] 
 - [ ] 
 - [ ] 
 
-## 🎨 Design Considerations
+##  Design Considerations
 <!-- Any design or implementation considerations -->
 
 ### MCP Server Integration
@@ -46,32 +46,32 @@ As a [type of user], I want [feature] so that [benefit].
 - [ ] Developer experience improvements
 - [ ] Testing considerations
 
-## 🔧 Technical Details
+##  Technical Details
 <!-- Any technical implementation details or constraints -->
 
-## 📸 Mockups/Examples
+##  Mockups/Examples
 <!-- If applicable, add mockups, examples, or references -->
 
-## 🌟 Benefits
+##  Benefits
 <!-- What benefits will this feature provide? -->
 - 
 - 
 - 
 
-## ⚖️ Alternatives Considered
+##  Alternatives Considered
 <!-- What alternative solutions did you consider? -->
 
-## 📚 Additional Context
+##  Additional Context
 <!-- Add any other context about the feature request -->
 
-## 🤝 Contribution
+##  Contribution
 <!-- Are you willing to help implement this feature? -->
 - [ ] I can help with implementation
 - [ ] I can help with testing
 - [ ] I can help with documentation
 - [ ] I need guidance on how to contribute
 
-## 🔗 Related Issues
+##  Related Issues
 <!-- Link any related issues or discussions -->
 - Relates to #
 - Depends on #
