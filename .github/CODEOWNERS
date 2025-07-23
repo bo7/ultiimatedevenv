@@ -1,0 +1,37 @@
+# Code Owners for Docker Development Environment
+# 
+# This file defines who needs to review specific parts of the codebase
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners - require review for all changes
+* @bo7
+
+# Core configuration files - require extra scrutiny
+docker-compose*.yml @bo7
+Dockerfile* @bo7
+setup.sh @bo7
+.env* @bo7
+
+# Security-sensitive files
+.github/workflows/ @bo7
+.git/hooks/ @bo7
+*.sh @bo7
+
+# MCP server configurations  
+configs/mcp-servers/ @bo7
+claude-setup/ @bo7
+
+# Documentation - can be reviewed by docs team
+*.md
+README* 
+docs/
+
+# GitHub templates and workflows
+.github/ @bo7
+
+# Scripts that affect the environment
+manage.sh @bo7
+orchestrator.sh @bo7
+install-*.sh @bo7
+setup-*.sh @bo7
+clean-*.sh @bo7

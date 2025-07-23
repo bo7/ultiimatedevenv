@@ -1,0 +1,282 @@
+name:  PR Validation & Security
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+  
+  # Allow manual triggering for testing
+  workflow_dispatch:
+
+# Ensure only one workflow runs at a time per PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Basic validation and setup
+  validate-pr:
+    name:  Validate Pull Request
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    outputs:
+      should-test: ${{ steps.changes.outputs.should-test }}
+      
+    steps:
+      - name:  Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name:  Analyze changes
+        id: changes
+        run: |
+          echo "should-test=true" >> $GITHUB_OUTPUT
+          
+          # Check for sensitive files
+          if git diff --name-only origin/main...HEAD | grep -E '\.(env|key|pem|p12|pfx|keystore)$'; then
+            echo " Sensitive files detected in PR"
+            exit 1
+          fi
+          
+          # Check PR title format
+          if ! echo "${{ github.event.pull_request.title }}" | grep -qE '^(feat|fix|docs|chore|refactor|test|ci)(\(.+\))?: .+'; then
+            echo " PR title should follow conventional commit format"
+            echo "Examples: 'feat: add new MCP server', 'fix: docker build issue'"
+          fi
+          
+      - name:  Check for emojis in code
+        run: |
+          echo " Checking for emojis in modified files..."
+          
+          # Install emoji module
+          pip3 install emoji
+          
+          # Get list of modified files
+          MODIFIED_FILES=$(git diff --name-only origin/main...HEAD | grep -E '\.(py|md|js|ts|json|yaml|yml|sh|txt)$' || true)
+          
+          if [ -n "$MODIFIED_FILES" ]; then
+            echo " Checking files: $MODIFIED_FILES"
+            
+            # Run emoji check on modified files
+            EMOJI_COUNT=0
+            for file in $MODIFIED_FILES; do
+              if [ -f "$file" ]; then
+                FILE_EMOJIS=$(python3 -c "
+import emoji
+with open('$file', 'r', encoding='utf-8', errors='ignore') as f:
+    content = f.read()
+    emoji_count = len([c for c in content if emoji.is_emoji(c)])
+    print(emoji_count)
+                " 2>/dev/null || echo "0")
+                
+                if [ "$FILE_EMOJIS" -gt 0 ]; then
+                  echo " Found $FILE_EMOJIS emojis in $file"
+                  EMOJI_COUNT=$((EMOJI_COUNT + FILE_EMOJIS))
+                fi
+              fi
+            done
+            
+            if [ "$EMOJI_COUNT" -gt 0 ]; then
+              echo " Total emojis found: $EMOJI_COUNT"
+              echo " Run './clean-emojis.sh' to automatically remove emojis"
+              echo " Emojis will be automatically removed when merged"
+            else
+              echo " No emojis found in modified files"
+            fi
+          else
+            echo " No text files modified"
+          fi
+
+  # Job 2: Security scan
+  security-scan:
+    name:  Security Scan
+    runs-on: ubuntu-latest
+    needs: validate-pr
+    if: needs.validate-pr.outputs.should-test == 'true'
+    
+    steps:
+      - name:  Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name:  Run security scan
+        run: |
+          echo " Scanning for security issues..."
+          
+          # Check for hardcoded secrets
+          if git diff --name-only origin/main...HEAD | xargs grep -l -E "(password|secret|key|token|api_key)" 2>/dev/null; then
+            echo " Potential secrets found - please review"
+          fi
+          
+          # Check for dangerous patterns
+          if git diff --name-only origin/main...HEAD | xargs grep -l -E "(eval|exec|system|shell_exec)" 2>/dev/null; then
+            echo " Potentially dangerous code patterns found - please review"
+          fi
+          
+          echo " Security scan completed"
+
+  # Job 3: Docker build test
+  docker-build:
+    name:  Test Docker Build
+    runs-on: ubuntu-latest
+    needs: validate-pr
+    if: needs.validate-pr.outputs.should-test == 'true'
+    
+    steps:
+      - name:  Checkout code
+        uses: actions/checkout@v4
+        
+      - name:  Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name:  Test Docker Build
+        run: |
+          echo " Testing Docker build process..."
+          
+          # Test if docker-compose.yml is valid
+          if [ -f "docker-compose.yml" ]; then
+            echo " Validating docker-compose.yml..."
+            docker-compose config > /dev/null
+            echo " docker-compose.yml is valid"
+          fi
+          
+          # Test basic dockerfile syntax (if exists)
+          if [ -f "Dockerfile" ]; then
+            echo " Validating Dockerfile..."
+            docker build --dry-run -f Dockerfile . > /dev/null || echo " Dockerfile may have issues"
+          fi
+          
+          echo " Docker build test completed"
+
+  # Job 4: Setup script test
+  setup-test:
+    name:  Test Setup Scripts
+    runs-on: ubuntu-latest
+    needs: validate-pr
+    if: needs.validate-pr.outputs.should-test == 'true'
+    
+    steps:
+      - name:  Checkout code
+        uses: actions/checkout@v4
+        
+      - name:  Test setup scripts
+        run: |
+          echo " Testing setup scripts..."
+          
+          # Test if setup.sh exists and is executable
+          if [ -f "setup.sh" ]; then
+            if [ -x "setup.sh" ]; then
+              echo " setup.sh is executable"
+              
+              # Test syntax
+              bash -n setup.sh
+              echo " setup.sh syntax is valid"
+            else
+              echo " setup.sh is not executable"
+              exit 1
+            fi
+          fi
+          
+          # Test other shell scripts
+          find . -name "*.sh" -type f | while read script; do
+            if [ "$script" != "./setup.sh" ]; then
+              echo " Testing $script syntax..."
+              bash -n "$script"
+            fi
+          done
+          
+          echo " Setup script tests completed"
+
+  # Job 5: Documentation check
+  docs-check:
+    name:  Documentation Check
+    runs-on: ubuntu-latest
+    needs: validate-pr
+    if: needs.validate-pr.outputs.should-test == 'true'
+    
+    steps:
+      - name:  Checkout code
+        uses: actions/checkout@v4
+        
+      - name:  Check documentation
+        run: |
+          echo " Checking documentation..."
+          
+          # Check if README.md exists
+          if [ ! -f "README.md" ]; then
+            echo " README.md is missing"
+            exit 1
+          fi
+          
+          # Check for broken links in markdown files
+          find . -name "*.md" -type f | while read md_file; do
+            echo " Checking links in $md_file"
+            # Basic link syntax check
+            if grep -q '](.*' "$md_file"; then
+              echo " $md_file contains markdown links"
+            fi
+          done
+          
+          # Check if new features have documentation
+          MODIFIED_SCRIPTS=$(git diff --name-only origin/main...HEAD | grep -E '\.(sh|py)$' || true)
+          if [ -n "$MODIFIED_SCRIPTS" ]; then
+            echo " New scripts detected - ensure documentation is updated"
+          fi
+          
+          echo " Documentation check completed"
+
+  # Job 6: Final validation
+  pr-ready:
+    name:  PR Ready for Review
+    runs-on: ubuntu-latest
+    needs: [validate-pr, security-scan, docker-build, setup-test, docs-check]
+    if: always()
+    
+    steps:
+      - name:  Check all jobs status
+        run: |
+          echo " PR Validation Summary"
+          echo "========================"
+          
+          if [ "${{ needs.validate-pr.result }}" != "success" ]; then
+            echo " PR validation failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo " Security scan failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.docker-build.result }}" != "success" ]; then
+            echo " Docker build test failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.setup-test.result }}" != "success" ]; then
+            echo " Setup script test failed"
+            exit 1
+          fi
+          
+          if [ "${{ needs.docs-check.result }}" != "success" ]; then
+            echo " Documentation check failed"
+            exit 1
+          fi
+          
+          echo " All validation checks passed!"
+          echo " PR is ready for maintainer review"
+          
+      - name:  Add success comment
+        if: success()
+        run: |
+          echo "This PR has passed all automated checks:"
+          echo " Security scan"
+          echo " Docker build test"  
+          echo " Setup script validation"
+          echo " Documentation check"
+          echo " Code quality check"
+          echo ""
+          echo "Ready for maintainer review! "

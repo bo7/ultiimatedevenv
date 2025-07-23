@@ -1,0 +1,86 @@
+{
+  "numStartups": 1,
+  "installMethod": "global",
+  "autoUpdates": true,
+  "tipsHistory": {},
+  "memoryUsageCount": 0,
+  "promptQueueUseCount": 0,
+  "autoUpdaterStatus": "enabled",
+  "hasCompletedOnboarding": true,
+  "projects": {},
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ]
+    },
+    "time": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-time",
+        "--local-timezone",
+        "Europe/Berlin"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@context7/context7-mcp"
+      ]
+    },
+    "filesystem-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/workspace"
+      ]
+    },
+    "desktop-commander": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@wonderwhy-er/desktop-commander"
+      ]
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "brave-search-mcp"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
+    },
+    "zen-beehive": {
+      "command": "/home/devuser/.zen-mcp-server/run.sh",
+      "args": [],
+      "env": {
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+        "CUSTOM_API_URL": "${CUSTOM_API_URL}",
+        "CUSTOM_API_KEY": "${CUSTOM_API_KEY}",
+        "CUSTOM_MODEL_NAME": "${CUSTOM_MODEL_NAME}",
+        "DEFAULT_MODEL": "${DEFAULT_MODEL_ZEN}",
+        "WORKSPACE_ROOT": "/workspace"
+      }
+    }
+  },
+  "userID": "docker-dev-user",
+  "firstStartTime": "2025-01-23T00:00:00.000Z",
+  "isQualifiedForDataSharing": false,
+  "subscriptionNoticeCount": 0,
+  "hasAvailableSubscription": false,
+  "lastReleaseNotesSeen": "1.0.56"
+}
