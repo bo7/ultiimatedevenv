@@ -1,0 +1,529 @@
+# Streamlined Development Environment
+# Focused setup: Neovim + Python 3.12 + Claude Code + MCP servers + Ghostty splits
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# User setup - use available IDs
+ARG USERNAME=devuser
+ARG USER_UID=1001
+ARG USER_GID=1001
+
+# Install essential system packages with Python 3.12 (available by default in 24.04)
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    zsh \
+    build-essential \
+    software-properties-common \
+    ca-certificates \
+    gnupg \
+    sudo \
+    openssh-client \
+    unzip \
+    python3.12 \
+    python3.12-dev \
+    python3.12-venv \
+    python3-pip \
+    screen \
+    gettext-base \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Python 3.12 as default
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
+
+# Install Neovim (from default Ubuntu repository)
+RUN apt-get update && \
+    apt-get install -y neovim && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 (latest LTS)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Update npm to newest version
+RUN npm install -g npm@latest
+
+# Install MCP servers and essential Node packages (with timeout settings)
+RUN npm config set timeout 300000 && \
+    npm install -g @anthropic-ai/claude-code || true && \
+    npm install -g @upstash/context7-mcp || true && \
+    npm install -g @context7/context7-mcp || true && \
+    npm install -g zen-mcp-server-199bio || true && \
+    npm install -g @modelcontextprotocol/server-filesystem || true && \
+    npm install -g @modelcontextprotocol/server-memory || true && \
+    npm install -g @wonderwhy-er/desktop-commander || true && \
+    npm install -g brave-search-mcp || true && \
+    npm install -g mcp-jest || true && \
+    npm install -g typescript ts-node eslint prettier || true
+
+# Git already installed above, no need to reinstall
+
+# Install Python tools using --break-system-packages (safe in containers)
+RUN pip install --break-system-packages \
+    pipx \
+    black \
+    ruff \
+    pre-commit \
+    virtualenv \
+    requests \
+    fastapi \
+    uvicorn \
+    pytest
+
+# Install uv (fastest Python package installer)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Install UV-based MCP servers
+RUN /root/.cargo/bin/uv tool install mcp-server-fetch || true
+RUN /root/.cargo/bin/uv tool install mcp-server-time || true
+
+# Create user with sudo privileges (handle existing GID gracefully)
+RUN groupadd --gid $USER_GID $USERNAME || true && \
+    useradd --uid $USER_UID --gid $USER_GID -m $USERNAME && \
+    echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME && \
+    chmod 0440 /etc/sudoers.d/$USERNAME
+
+# Set up Claude Code configuration for the user
+USER $USERNAME
+RUN mkdir -p /home/$USERNAME/.config/claude
+
+# Create Claude MCP configuration file with environment variable placeholders
+RUN printf '%s\n' \
+    '{' \
+    '  "numStartups": 1,' \
+    '  "installMethod": "global",' \
+    '  "autoUpdates": true,' \
+    '  "tipsHistory": {},' \
+    '  "memoryUsageCount": 0,' \
+    '  "promptQueueUseCount": 0,' \
+    '  "autoUpdaterStatus": "enabled",' \
+    '  "hasCompletedOnboarding": true,' \
+    '  "projects": {},' \
+    '  "mcpServers": {' \
+    '    "memory": {' \
+    '      "command": "npx",' \
+    '      "args": [' \
+    '        "-y",' \
+    '        "@modelcontextprotocol/server-memory"' \
+    '      ]' \
+    '    },' \
+    '    "fetch": {' \
+    '      "command": "uvx",' \
+    '      "args": [' \
+    '        "mcp-server-fetch"' \
+    '      ]' \
+    '    },' \
+    '    "time": {' \
+    '      "command": "uvx",' \
+    '      "args": [' \
+    '        "mcp-server-time",' \
+    '        "--local-timezone",' \
+    '        "Europe/Berlin"' \
+    '      ]' \
+    '    },' \
+    '    "context7": {' \
+    '      "command": "npx",' \
+    '      "args": [' \
+    '        "-y",' \
+    '        "@context7/context7-mcp"' \
+    '      ]' \
+    '    },' \
+    '    "filesystem-server": {' \
+    '      "command": "npx",' \
+    '      "args": [' \
+    '        "-y",' \
+    '        "@modelcontextprotocol/server-filesystem",' \
+    '        "/workspace"' \
+    '      ]' \
+    '    },' \
+    '    "desktop-commander": {' \
+    '      "command": "npx",' \
+    '      "args": [' \
+    '        "-y",' \
+    '        "@wonderwhy-er/desktop-commander"' \
+    '      ]' \
+    '    },' \
+    '    "brave-search": {' \
+    '      "command": "npx",' \
+    '      "args": [' \
+    '        "-y",' \
+    '        "brave-search-mcp"' \
+    '      ],' \
+    '      "env": {' \
+    '        "BRAVE_API_KEY": "${BRAVE_API_KEY}"' \
+    '      }' \
+    '    },' \
+    '    "zen-beehive": {' \
+    '      "command": "/home/'$USERNAME'/.zen-mcp-server/run.sh",' \
+    '      "args": [],' \
+    '      "env": {' \
+    '        "GEMINI_API_KEY": "${GEMINI_API_KEY}",' \
+    '        "OPENAI_API_KEY": "${OPENAI_API_KEY}",' \
+    '        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",' \
+    '        "CUSTOM_API_URL": "${CUSTOM_API_URL}",' \
+    '        "CUSTOM_API_KEY": "${CUSTOM_API_KEY}",' \
+    '        "CUSTOM_MODEL_NAME": "${CUSTOM_MODEL_NAME}",' \
+    '        "DEFAULT_MODEL": "${DEFAULT_MODEL_ZEN}",' \
+    '        "WORKSPACE_ROOT": "/workspace"' \
+    '      }' \
+    '    }' \
+    '  },' \
+    '  "userID": "docker-dev-user",' \
+    '  "firstStartTime": "2025-01-23T00:00:00.000Z",' \
+    '  "isQualifiedForDataSharing": false,' \
+    '  "subscriptionNoticeCount": 0,' \
+    '  "hasAvailableSubscription": false,' \
+    '  "lastReleaseNotesSeen": "1.0.56"' \
+    '}' \
+    > /home/$USERNAME/.claude.json
+
+# Create startup script to substitute environment variables in Claude config
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    '# Substitute environment variables in Claude configuration' \
+    '' \
+    'echo "Setting up Claude configuration with environment variables..."' \
+    '' \
+    '# Create a temporary config file with substituted values' \
+    'envsubst < /home/'$USERNAME'/.claude.json > /home/'$USERNAME'/.claude.json.tmp' \
+    '' \
+    '# Replace the original config' \
+    'mv /home/'$USERNAME'/.claude.json.tmp /home/'$USERNAME'/.claude.json' \
+    '' \
+    'echo "Claude configuration updated with current environment variables"' \
+    > /home/$USERNAME/setup-claude-config.sh
+
+RUN chmod +x /home/$USERNAME/setup-claude-config.sh
+
+# Clone and setup BeehiveInnovations Zen MCP Server
+RUN git clone https://github.com/BeehiveInnovations/zen-mcp-server.git /home/$USERNAME/.zen-mcp-server && \
+    chown -R $USERNAME:$USERNAME /home/$USERNAME/.zen-mcp-server
+
+# Switch to user for Python setup
+WORKDIR /home/$USERNAME/.zen-mcp-server
+RUN python3 -m venv venv && \
+    ./venv/bin/pip install --upgrade pip && \
+    ./venv/bin/pip install -r requirements.txt || true
+
+# Create Zen MCP configuration
+RUN echo '#!/bin/bash\n\
+cd /home/'$USERNAME'/.zen-mcp-server\n\
+source venv/bin/activate\n\
+exec python server.py "$@"\n' > /home/$USERNAME/.zen-mcp-server/run.sh && \
+    chmod +x /home/$USERNAME/.zen-mcp-server/run.sh
+
+# Install Oh My Zsh
+USER $USERNAME
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+
+# Set up Neovim configuration with line numbers
+USER $USERNAME
+RUN mkdir -p /home/$USERNAME/.config/nvim
+RUN printf '%s\n' \
+    '-- Neovim Configuration' \
+    'vim.opt.number = true' \
+    'vim.opt.relativenumber = true' \
+    'vim.opt.tabstop = 4' \
+    'vim.opt.shiftwidth = 4' \
+    'vim.opt.expandtab = true' \
+    'vim.opt.autoindent = true' \
+    'vim.opt.smartindent = true' \
+    'vim.opt.wrap = false' \
+    'vim.opt.ignorecase = true' \
+    'vim.opt.smartcase = true' \
+    'vim.opt.hlsearch = true' \
+    'vim.opt.incsearch = true' \
+    'vim.opt.scrolloff = 8' \
+    'vim.opt.sidescrolloff = 8' \
+    "vim.opt.mouse = 'a'" \
+    "vim.opt.clipboard = 'unnamedplus'" \
+    '' \
+    '-- Color scheme' \
+    "vim.cmd('colorscheme desert')" \
+    '' \
+    '-- Key mappings' \
+    "vim.g.mapleader = ' '" \
+    "vim.keymap.set('n', '<leader>w', ':w<CR>')" \
+    "vim.keymap.set('n', '<leader>q', ':q<CR>')" \
+    "vim.keymap.set('n', '<Esc>', ':nohlsearch<CR>')" \
+    '' \
+    '-- Python-specific settings' \
+    "vim.api.nvim_create_autocmd('FileType', {" \
+    "  pattern = 'python'," \
+    "  callback = function()" \
+    "    vim.opt_local.tabstop = 4" \
+    "    vim.opt_local.shiftwidth = 4" \
+    "    vim.opt_local.expandtab = true" \
+    "  end," \
+    "})" \
+    > /home/$USERNAME/.config/nvim/init.lua
+
+# Create Ghostty configuration (for native split management)
+RUN mkdir -p /home/$USERNAME/.config/ghostty
+RUN printf '%s\n' \
+    '# Ghostty Configuration for Development' \
+    'theme = dark' \
+    'font-size = 13' \
+    'font-family = "SF Mono"' \
+    'window-padding-x = 4' \
+    'window-padding-y = 4' \
+    'mouse-hide-while-typing = true' \
+    'copy-on-select = clipboard' \
+    'confirm-close-surface = false' \
+    '' \
+    '# Split management keybindings' \
+    'keybind = cmd+d=new_split:right' \
+    'keybind = cmd+shift+d=new_split:down' \
+    'keybind = cmd+w=close_surface' \
+    'keybind = cmd+h=goto_split:left' \
+    'keybind = cmd+j=goto_split:down' \
+    'keybind = cmd+k=goto_split:up' \
+    'keybind = cmd+l=goto_split:right' \
+    'keybind = cmd+shift+h=resize_split:left,10' \
+    'keybind = cmd+shift+j=resize_split:down,3' \
+    'keybind = cmd+shift+k=resize_split:up,3' \
+    'keybind = cmd+shift+l=resize_split:right,10' \
+    > /home/$USERNAME/.config/ghostty/config
+
+# Create development layout script that works with Ghostty splits
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    '# Start development environment optimized for Ghostty splits' \
+    '# This script runs inside the container' \
+    '' \
+    'echo "Starting development environment..."' \
+    'echo "Ghostty splits should be managed from the host terminal"' \
+    'echo "Use Cmd+D for right split, Cmd+Shift+D for down split"' \
+    '' \
+    '# Setup Claude configuration with environment variables' \
+    'if [ -f "/home/devuser/setup-claude-config.sh" ]; then' \
+    '    /home/devuser/setup-claude-config.sh' \
+    'fi' \
+    '' \
+    '# Check for project requirements and install them' \
+    'if [ -f "/workspace/requirements.txt" ]; then' \
+    '    echo "Found requirements.txt, installing packages..."' \
+    '    pip install -r /workspace/requirements.txt' \
+    'elif [ -f "/workspace/pyproject.toml" ]; then' \
+    '    echo "Found pyproject.toml, installing with pip..."' \
+    '    pip install -e /workspace' \
+    'elif [ -f "/workspace/package.json" ]; then' \
+    '    echo "Found package.json, installing npm dependencies..."' \
+    '    cd /workspace && npm install' \
+    'fi' \
+    '' \
+    '# Check for saved container state and offer to restore' \
+    'if [ -f "/workspace/.container-packages.txt" ]; then' \
+    '    echo "Found saved package state. Restore? (y/n)"' \
+    '    read -t 10 -n 1 restore_choice' \
+    '    if [ "$restore_choice" = "y" ]; then' \
+    '        echo "Restoring saved packages..."' \
+    '        pip install -r /workspace/.container-packages.txt' \
+    '    fi' \
+    'fi' \
+    '' \
+    'echo ""' \
+    'echo "Development environment ready!"' \
+    'echo "Recommended Ghostty layout:"' \
+    'echo "1. Current pane: Start Neovim with: nvim"' \
+    'echo "2. Cmd+D: Create right split for terminal/shell"' \
+    'echo "3. Cmd+Shift+D: Create bottom right split for Claude Code"' \
+    'echo ""' \
+    'echo "Commands:"' \
+    'echo "  nvim           - Start Neovim editor"' \
+    'echo "  claude         - Start Claude Code with MCP servers"' \
+    'echo "  claude --mcp-debug - Start Claude Code with MCP debugging"' \
+    'echo "  python         - Python 3.12 REPL"' \
+    'echo "  dev-help       - Show more development commands"' \
+    'echo ""' \
+    'echo "MCP Servers configured:"' \
+    'echo "  ✓ Filesystem    - File operations"' \
+    'echo "  ✓ Memory        - Memory storage"' \
+    'echo "  ✓ Fetch         - Web content fetching"' \
+    'echo "  ✓ Time          - Date/time operations"' \
+    'echo "  ✓ Context7      - Documentation lookup"' \
+    'echo "  ✓ Desktop Cmd   - Desktop commands"' \
+    'echo "  ✓ Brave Search  - Web search (with API key)"' \
+    'echo "  ✓ Zen (Beehive) - Multi-AI orchestration (Gemini/OpenAI/Ollama)"' \
+    'echo ""' \
+    'echo "Zen MCP Server Features:"' \
+    'echo "  • chat         - Collaborative thinking with multiple AIs"' \
+    'echo "  • thinkdeep    - Extended reasoning and analysis"' \
+    'echo "  • codereview   - Professional code review"' \
+    'echo "  • debug        - Root cause analysis"' \
+    'echo "  • analyze      - Code and architecture analysis"' \
+    'echo ""' \
+    'echo "Ollama Integration:"' \
+    'echo "  • External Ollama: http://host.docker.internal:11434"' \
+    'echo "  • Default model: qwen3:8b (configurable)"' \
+    'echo ""' \
+    > /home/$USERNAME/start-dev-layout && \
+    chmod +x /home/$USERNAME/start-dev-layout
+
+# Create helper command for development
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    'echo "Development Environment Help"' \
+    'echo "==========================="' \
+    'echo ""' \
+    'echo "Ghostty Split Commands (use from host terminal):"' \
+    'echo "  Cmd+D           - Split right"' \
+    'echo "  Cmd+Shift+D     - Split down"' \
+    'echo "  Cmd+W           - Close current split"' \
+    'echo "  Cmd+H/J/K/L     - Navigate splits"' \
+    'echo "  Cmd+Shift+H/J/K/L - Resize splits"' \
+    'echo ""' \
+    'echo "Container Development Commands:"' \
+    'echo "  nvim [file]     - Edit with Neovim"' \
+    'echo "  claude          - Start Claude Code with MCP servers"' \
+    'echo "  claude --mcp-debug - Debug MCP server connections"' \
+    'echo "  claude mcp list - List configured MCP servers"' \
+    'echo "  python          - Python REPL"' \
+    'echo "  pip install X   - Install Python package"' \
+    'echo "  npm install X   - Install Node package"' \
+    'echo "  black .         - Format Python code"' \
+    'echo "  ruff check .    - Lint Python code"' \
+    'echo "  pytest          - Run Python tests"' \
+    'echo ""' \
+    'echo "MCP Server Commands (within Claude Code):"' \
+    'echo "  /mcp            - Check MCP server status"' \
+    'echo "  /mcp list       - List available tools"' \
+    'echo "  Search web      - Use Brave Search MCP"' \
+    'echo "  Read files      - Use Filesystem MCP"' \
+    'echo "  Fetch URLs      - Use Fetch MCP"' \
+    'echo ""' \
+    'echo "Zen MCP Commands (AI Orchestration):"' \
+    'echo "  \"use zen chat to brainstorm X\"     - Multi-AI collaboration"' \
+    'echo "  \"zen thinkdeep about Y\"            - Extended reasoning"' \
+    'echo "  \"zen codereview this file\"         - Professional review"' \
+    'echo "  \"zen debug this error\"             - Root cause analysis"' \
+    'echo "  \"zen analyze architecture\"         - Code analysis"' \
+    'echo "  \"use qwen3 to explain this\"        - Local Ollama model"' \
+    'echo ""' \
+    'echo "Ollama Integration:"' \
+    'echo "  • External access via host.docker.internal:11434"' \
+    'echo "  • Configure models in host Ollama instance"' \
+    'echo "  • Available through Zen MCP custom API endpoint"' \
+    'echo ""' \
+    'echo "Recommended 3-pane layout:"' \
+    'echo "  Left (main): Neovim editor"' \
+    'echo "  Right-top: Terminal for commands"' \
+    'echo "  Right-bottom: Claude Code session"' \
+    'echo ""' \
+    > /home/$USERNAME/dev-help && \
+    chmod +x /home/$USERNAME/dev-help
+
+# Set up workspace directory
+USER root
+RUN mkdir -p /workspace && chown -R $USERNAME:$USERNAME /workspace
+
+# Create .env template (will be overridden by volume mount)
+RUN printf '%s\n' \
+    '# API Keys - DO NOT COMMIT TO GIT' \
+    'OPENROUTER_API_KEY=your-openrouter-key-here' \
+    'ANTHROPIC_API_KEY=your-anthropic-key-here' \
+    'BRAVE_API_KEY=BSAttExzgW4_H4rcHMmpHQ9hw7vz2lX' \
+    'GEMINI_API_KEY=your-gemini-key-here' \
+    '' \
+    '# Python Settings' \
+    'PYTHONPATH=/workspace' \
+    'PYTHON_VERSION=3.12' \
+    '' \
+    '# Development Settings' \
+    'NODE_ENV=development' \
+    'DEBUG=true' \
+    '' \
+    '# Claude Code Settings' \
+    'CLAUDE_MCP_ENABLED=true' \
+    'MCP_TIMEOUT=30000' \
+    'MCP_TOOL_TIMEOUT=10000' \
+    '' \
+    '# Zen MCP Server Settings (BeehiveInnovations)' \
+    'DEFAULT_MODEL_ZEN=auto' \
+    'TEMPERATURE_ANALYTICAL=0.2' \
+    'TEMPERATURE_BALANCED=0.5' \
+    'TEMPERATURE_CREATIVE=0.7' \
+    '' \
+    '# Local Models (Ollama) - External to container' \
+    'CUSTOM_API_URL=http://host.docker.internal:11434/v1' \
+    'CUSTOM_API_KEY=' \
+    'CUSTOM_MODEL_NAME=qwen3:8b' \
+    '' \
+    '# Legacy Zen MCP Server Settings' \
+    'ZEN_DEFAULT_MODEL=auto' \
+    'ZEN_THINKING_MODE=medium' \
+    > /workspace/.env.template
+
+# Create .gitignore
+RUN printf '%s\n' \
+    '# Environment files - NEVER COMMIT' \
+    '.env' \
+    '.env.local' \
+    '.env.*.local' \
+    '' \
+    '# Python' \
+    '__pycache__/' \
+    '*.pyc' \
+    '*.pyo' \
+    '*.pyd' \
+    '.Python' \
+    '*.so' \
+    '.venv/' \
+    'venv/' \
+    'ENV/' \
+    '' \
+    '# Node' \
+    'node_modules/' \
+    'npm-debug.log*' \
+    '' \
+    '# IDE' \
+    '.vscode/' \
+    '.idea/' \
+    '' \
+    '# OS' \
+    '.DS_Store' \
+    'Thumbs.db' \
+    > /workspace/.gitignore
+
+# Final user setup and permissions
+USER $USERNAME
+WORKDIR /workspace
+
+# Add helpful aliases for Ghostty-based development
+RUN echo 'alias ll="ls -la"' >> /home/$USERNAME/.zshrc && \
+    echo 'alias vim="nvim"' >> /home/$USERNAME/.zshrc && \
+    echo 'alias dev="~/start-dev-layout"' >> /home/$USERNAME/.zshrc && \
+    echo 'alias python="python3"' >> /home/$USERNAME/.zshrc && \
+    echo 'alias dev-help="~/dev-help"' >> /home/$USERNAME/.zshrc && \
+    echo 'alias claude-debug="claude --mcp-debug"' >> /home/$USERNAME/.zshrc && \
+    echo 'alias mcp-status="claude mcp list"' >> /home/$USERNAME/.zshrc && \
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/$USERNAME/.zshrc && \
+    echo 'export TERM=screen-256color' >> /home/$USERNAME/.zshrc
+
+ENV SHELL=/bin/zsh
+ENV EDITOR=nvim
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD python3 --version && node --version && nvim --version || exit 1
+
+# Default command keeps container running and ready for development
+CMD ["/bin/zsh"]
+
+
+# Optional components (commented out to avoid build issues)
+# Playwright can be installed later if needed:
+# RUN pip install --break-system-packages playwright playwright-mcp
+# RUN playwright install chromium
+
+# Optional file copies (commented out as they may not exist)
+# COPY start-ghostty.sh /usr/local/bin/
+# RUN chmod +x /usr/local/bin/start-ghostty.sh
+# COPY nvim /root/.config/nvim
